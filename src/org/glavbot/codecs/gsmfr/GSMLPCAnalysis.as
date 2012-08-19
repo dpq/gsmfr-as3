@@ -1,6 +1,6 @@
 package org.glavbot.codecs.gsmfr {
 	/**
-	 * @author Humanoid
+	 * @author Vasiliy Vasilyev developer@flashgate.org
 	 */
 	public class GSMLPCAnalysis {
 

@@ -1,6 +1,6 @@
 package org.glavbot.codecs.gsmfr {
 	/**
-	 * @author Humanoid
+	 * @author Vasiliy Vasilyev developer@flashgate.org
 	 */
 	public class GSMError extends Error {
 
@@ -15,6 +15,7 @@ package org.glavbot.codecs.gsmfr {
 		public static const REFLECTION_COEFF_ERROR: int = 3003;
 
 		public static const GSM_DIV_ERROR: int = 1;
+		public static const BAD_FRAME_DATA: int = 5001;
 
 		public function GSMError(code: int) {
 			super(code);

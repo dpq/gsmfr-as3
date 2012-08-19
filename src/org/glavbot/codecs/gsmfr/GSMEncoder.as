@@ -3,90 +3,104 @@ package org.glavbot.codecs.gsmfr {
 	import flash.utils.ByteArray;
 
 	/**
-	 * @author Humanoid
+	 * @author Vasiliy Vasilyev developer@flashgate.org
 	 */
 	public class GSMEncoder {
 
 		public static const FRAME_SIZE: int = 160;
 
-		private var xmc_point: int;
-		private var Nc_bc_index: int;
-		private var xmaxc_Mc_index: int;
-		private var dp_dpp_point_dp0: int = 120;
+		private var mc: Vector.<int> = new Vector.<int>(4, true);
 
-		private var ep: Vector.<int> = new <int>[];
-		private var e: Vector.<int> = new <int>[];
-		private var so: Vector.<int> = new <int>[FRAME_SIZE];
 
-		private var state: GSMState = new GSMState();
-		private var lpc: GSMLPCAnalysis = new GSMLPCAnalysis();
-		private var short: GSMShortTerm = new GSMShortTerm();
+		private var wt: Vector.<int> = new Vector.<int>(GSM.FRAME_SAMPLES, true);
+		private var s: Vector.<int> = new Vector.<int>(GSM.FRAME_SAMPLES, true);
+
+		private var z: int;
+		private var lz: int;
+		private var mp: int;
 
 		public function GSMEncoder() {
 			super();
 		}
 
-		public function encode(frame: Vector.<Number>): ByteArray {
-			preprocess(state, so, frame);
-			lpc.analyze(so);
-			short.filter(state, lpc.larc, so);
+		public function encode(frame: Vector.<int>): ByteArray {
+			preprocess(frame);
 
 			return null;
 		}
 
-		private function preprocess(state: GSMState, so: Vector.<int>, frame: Vector.<Number>): void {
-			const MIN: int = int.MIN_VALUE;
-			const MAX: int = int.MAX_VALUE;
-
-			var z1: int = state.z1;
-			var L_z2: int = state.L_z2;
-			var mp: int = state.mp;
-			var s1: int;
+		private function preprocess(frame: Vector.<int>): void {
+			var s: int;
 			var msp: int;
 			var lsp: int;
+			var ls: int;
+			var value: int;
 
-			var SO: int;
-			var L_s2: int;
-			var L_tmp: int;
-			var index: int = FRAME_SIZE;
-			var sum: Number;
+			for(var i:int = 0; i< GSM.FRAME_SAMPLES; i++) {
+				value = frame[i];
+				
+				trace(value);
+				
+				s = value - z;
+				z = value;
+				
+				ls = s << 15;
+				msp = lz >> 15;
+				lsp = lz - (msp << 15);
 
-			while (index-- != 0) {
-				SO = (frame[index] * 0x7fff >> 1) & ~3;
+				ls += mult_r(lsp, 32735);
+				lz = saturate(msp * 32735 + ls);
 
-				if (SO < -0x4000 || SO > 0x3ffc) {
-					throw new GSMError(GSMError.PREPROCESS_INPUT_ERROR);
-				}
-
-				s1 = SO - z1;
-				if (s1 == -0x8000) {
-					throw new GSMError(GSMError.PREPROCESS_STATE_ERROR);
-				}
-
-				z1 = SO;
-				L_s2 = s1 << 15;
-				msp = L_z2 >> 15;
-				lsp = L_z2 - (msp << 15);
-
-				L_tmp = lsp * 0x7FDF;
-				L_s2 += (L_tmp + 0x4000) >> 15;
-
-				sum = L_tmp + L_s2;
-				L_z2 = sum > MAX ? MAX : (sum < MIN ? MIN : sum);
-
-				sum = L_z2 + 0x4000;
-				L_tmp = sum > MAX ? MAX : (sum < MIN ? MIN : sum);
-
-				msp = (mp * -0x6e14 + 0x4000) >> 15;
-				mp = L_tmp >> 15;
-
-				sum = msp + mp;
-				so[index] = sum > 0x7fff ? 0x7fff : (sum < -0x8000 ? -0x8000 : sum);
+				msp = mult_r(mp, -28180);
+				mp = saturate(lz + 16384) >> 15;
+				
+				//trace(mp+" "+msp);
+				
+				frame[i] = add(mp, msp);
 			}
+		}
 
-			state.z1 = z1;
-			state.L_z2 = L_z2;
-			state.mp = mp;
+		private static function saturate(x: Number): int {
+			return x >= -32768 ? x <= 32767 ? x : 32767 : -32768;
+		}
+
+		private static function sub(a: int, b: int): int {
+			return saturate(a - b);
+		}
+
+		private static function add(a: int, b: int): int {
+			return saturate(a + b);
+		}
+
+		private static function asl(a: int, n: int): int {
+			if (n >= 16)
+				return 0;
+			if (n <= -16)
+				return a >= 0 ? 0 : -1;
+			if (n < 0)
+				return asr(a, -n);
+			else
+				return a << n;
+		}
+
+		private static function asr(a: int, n: int): int {
+			if (n >= 16)
+				return a >= 0 ? 0 : -1;
+			if (n <= -16)
+				return 0;
+			if (n < 0)
+				return a << -n;
+			else
+				return a >> n;
+		}
+
+		private static function mult_r(a: int, b: int): int {
+			if (b == -32768 && a == -32768) {
+				return 32767;
+			} else {
+				var prod: int = a * b + 16384;
+				return saturate(prod >> 15);
+			}
 		}
 
 	}

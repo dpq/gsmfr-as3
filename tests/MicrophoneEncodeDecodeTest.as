@@ -12,7 +12,9 @@
 	import flash.utils.ByteArray;
 	import org.glavbot.codecs.gsmfr.GSMEncoder;
 
-
+	/**
+	 * @author Vasiliy Vasilyev
+	 */
 	[SWF(backgroundColor="#000000", frameRate="60", width="640", height="480")]
 	public class MicrophoneEncodeDecodeTest extends Sprite {
 
@@ -68,7 +70,7 @@
 		}
 		
 		private function _sample(event: SampleDataEvent): void {
-			try {
+			/*try {
 				var data:ByteArray = event.data;
 				var count:int = data.bytesAvailable / 16;
 				var left:Number;
@@ -104,7 +106,7 @@
 				}				
 			} catch (error:*) {
 				trace(error);
-			}
+			}*/
 		}
 
 		private function _status(event: StatusEvent): void {
