@@ -3,6 +3,8 @@ package org.glavbot.codecs.gsmfr {
 	import flash.geom.Point;
 
 	/**
+	 * GSM-FR Common Math and Constants
+	 * 
 	 * @author Vasiliy Vasilyev developer@flashgate.org
 	 */
 	public class GSM {

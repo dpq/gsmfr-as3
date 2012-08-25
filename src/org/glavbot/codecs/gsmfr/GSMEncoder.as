@@ -4,6 +4,8 @@ package org.glavbot.codecs.gsmfr {
 	import flash.utils.ByteArray;
 
 	/**
+	 * GSM-FR Encoder
+	 * 
 	 * @author Vasiliy Vasilyev developer@flashgate.org
 	 */
 	public class GSMEncoder {
@@ -40,7 +42,7 @@ package org.glavbot.codecs.gsmfr {
 
 		/**
 		 * @param samples	160 samples of PCM 8000Hz 16bit
-		 * @return			33 s of GSM-FR encoded data
+		 * @return			33 bytes of GSM-FR encoded data
 		 */
 		public function encode(samples: Vector.<int>): ByteArray {
 			preprocess(samples);
