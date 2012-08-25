@@ -3,6 +3,8 @@ package {
 	import org.glavbot.codecs.gsmfr.GSM;
 	import org.glavbot.codecs.gsmfr.GSMDecoder;
 
+	import flash.display.Bitmap;
+	import flash.display.BitmapData;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
@@ -30,12 +32,12 @@ package {
 		private var decoder: GSMDecoder;
 		private var sound: Sound;
 		private var field: TextField;
-
+		
 		private var framesProcessed: int;
-		private var timeTotal: int;
 		private var timeProcessed: int;
-		private var timeResampled: int;
 		private var timeLastSample: int;
+		private var bitmap: BitmapData;
+		private var image: Bitmap;
 
 		public function FileDecodePlayTest() {
 			try {
@@ -65,7 +67,10 @@ package {
 			field.wordWrap = false;
 			field.selectable = false;
 			field.mouseEnabled = false;
+			field.y = 130;
 			addChild(field);
+			
+			addChild(image = new Bitmap(bitmap = new BitmapData(640, 128, false, 0x002200)));
 		}
 
 		private function initInput(): void {
@@ -84,38 +89,58 @@ package {
 
 		private function _sample(event: SampleDataEvent): void {
 			try {
-				// Minimum required samples count
+				// Minimum required samples count is 2048
+				
+				var sampleTime:int = getTimer();
 				var samples: int = 2048;
-				var timeStart: int = getTimer();
+				var i: int;
 
 				while (samples > 0 && input.bytesAvailable > GSM.FRAME_SIZE) {
 					var time: int = getTimer();
+					
+					// Decode frame
+					
 					var frame: Vector.<int> = decoder.decode(input);
 					var scale: Number = GSM.FRAME_SAMPLES / FRAME_SAMPLES;
 
 					timeProcessed += getTimer() - time;
-					time = getTimer();
+					
+					for (i = 0; i < GSM.FRAME_SAMPLES; i++) {
+						bitmap.setPixel(1, bitmap.height * (0.5 + frame[i] * 0.5 / 32768), 0x00ff00);
+						bitmap.scroll(1, 0);
+					}
 
-					for (var i: int = 0; i < FRAME_SAMPLES; i++) {
+					// Resample 8000Hz --> 44100Hz
+										
+					for (i = 0; i < FRAME_SAMPLES; i++) {
+						
+						// Convert 16bit PCM to float PCM and Write
+						
 						var value: Number = frame[int(i * scale)] / 32768;
 						event.data.writeFloat(value);
 						event.data.writeFloat(value);
 					}
-					timeResampled += getTimer() - time;
+					
 					framesProcessed++;
-
 					samples -= FRAME_SAMPLES;
 				}
+				
+				// Write silence if no data
 
 				while (samples-- > 0) {
 					event.data.writeFloat(0);
 					event.data.writeFloat(0);
 				}
 
-				timeTotal += getTimer() - timeStart;
-
-				field.text = "GSM-FR Decoding\n" + "Input: File(read position:" + input.position + ", length:" + input.length + ")\n" + "Output: Sound object\n--\n" + "Frame process time: " + Math.round(timeTotal / framesProcessed) + "ms (" + Math.round(framesProcessed * 1000 / timeTotal) + "fps)\n" + "Frame decode time: " + Math.round(timeProcessed / framesProcessed) + "ms\n" + "Frame resampe+write time: " + Math.round(timeResampled / framesProcessed) + "ms\n" + "Frames processed: " + framesProcessed + "\n" + "Sample request delay: " + (getTimer() - timeLastSample) + "ms";
-
+				field.text = "GSM-FR Decoding\n" +
+					"Input: File(read position:" + input.position + ", length:" + input.length + ")\n" +
+					"Output: Sound Object\n" + 
+					"--\n" +
+					"Performance: " + Math.round(framesProcessed * 1000 / timeProcessed) + "fps\n" +
+					"Frame decode time: " + Math.round(timeProcessed / framesProcessed) + "ms\n" +
+					"Frames processed: " + framesProcessed + "\n" +
+					"Sample output delay: " + (sampleTime - timeLastSample) + "ms";
+					
 				timeLastSample = getTimer();
 
 			} catch (e: Error) {

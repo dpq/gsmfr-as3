@@ -1,13 +1,14 @@
 gsmfr-as3
 =========
 
-var data: Vector<int>;	// 8KHz 16bit sample data
-var frame: ByteArray;	// 33 bytes
+Encoding:
+---------
+	var encoder: GSMEncoder = new GSMEncoder();
+	var data: Vector<int> = readSamples(); // 8KHz 16bit sample data
+	var frame: ByteArray = encoder.encode( data ); // 33 bytes
 
-// Encode
-var encoder: GSMEncoder = new GSMEncoder();
-frame = encoder.encode( data );
-
-// Decode
-var decoder: GSMDecoder = new GSMDecoder();
-data = decoder.decode( frame );
+Decoding:
+---------
+	var decoder: GSMDecoder = new GSMDecoder();
+	var frame: ByteArray = readBytes(); // 33 bytes
+	var data: Vector<int> = decoder.decode( frame ); // 8KHz 16bit sample data
