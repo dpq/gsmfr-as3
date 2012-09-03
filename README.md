@@ -1,6 +1,11 @@
 gsmfr-as3
 =========
 
+ETSI GSM 06.10 RPELTP (Regular Pulse Excitation-Long Term-Prediction-Linear Predictive Coder) Speech Coder Implementation
+
+Coding Rate: 13.2kbps
+Sampling Rate: 8000Hz
+
 Encoding:
 
 	var encoder: GSMEncoder = new GSMEncoder();

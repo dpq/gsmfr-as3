@@ -13,14 +13,13 @@
 	import flash.events.StatusEvent;
 	import flash.media.Microphone;
 	import flash.media.Sound;
-	import flash.media.SoundCodec;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
 	import flash.text.TextFormat;
 	import flash.utils.ByteArray;
 
 	/**
-	 * @author Vasiliy Vasilyev
+	 * @author Humanoid
 	 */
 	[SWF(backgroundColor="#000000", frameRate="60", width="640", height="480")]
 	public class MicrophoneEncodeDecodeTest extends Sprite {
@@ -31,12 +30,14 @@
 		private var microphone: Microphone;
 		private var encoder: GSMEncoder;
 		private var field: TextField;
-		private var frame: Vector.<int> = new <int>[];
-		private var inputBitmap: BitmapData;
-		private var outputBitmap: BitmapData;
+		
 		private var decoder: GSMDecoder;
 		private var sound: Sound;
-
+		
+		var input: Vector.<int> = new <int>[];
+		var inputPosition: int;
+		private var bitmap: BitmapData;
+		
 		public function MicrophoneEncodeDecodeTest() {
 			try {
 				initStage();
@@ -70,11 +71,10 @@
 			field.wordWrap = false;
 			field.selectable = false;
 			field.mouseEnabled = false;
-			field.y = 260;
+			field.y = 130;
 			addChild(field);
-
-			addChild(new Bitmap(inputBitmap = new BitmapData(640, 128, false, 0x002200)));
-			addChild(new Bitmap(outputBitmap = new BitmapData(640, 128, false, 0x220000))).y = 128;
+			
+			addChild(new Bitmap(bitmap = new BitmapData(640, 128, false, 0x002200)));
 		}
 
 		private function initEncoder(): void {
@@ -85,24 +85,19 @@
 			microphone = Microphone.getEnhancedMicrophone();
 
 			if (microphone) {
-				
+
 				microphone.setUseEchoSuppression(true);
-				microphone.setLoopBack(false);
 				microphone.encodeQuality = 6;
-				microphone.setSilenceLevel(0);
+				microphone.setSilenceLevel(0, 4000);
 				microphone.gain = 75;
 				microphone.rate = 44;
-				microphone.framesPerPacket = 1;
-				microphone.codec = SoundCodec.SPEEX;
 				microphone.addEventListener(StatusEvent.STATUS, _status);
-				microphone.addEventListener(SampleDataEvent.SAMPLE_DATA, _sample);
+				microphone.addEventListener(SampleDataEvent.SAMPLE_DATA, _samplein);
 
 			} else {
 				throw new Error("No microphone found");
 			}
 		}
-
-		var input: ByteArray = new ByteArray();
 
 		private function initSound(): void {
 			sound = new Sound();
@@ -110,152 +105,94 @@
 			sound.play();
 		}
 
-		private function _sampleout(event: SampleDataEvent): void {
+		private function _samplein(event: SampleDataEvent): void {
+			var data: ByteArray = event.data;
 			try {
-				// Minimum required samples count is 2048
+				while (data.bytesAvailable > 4) {
+					var sample: Number = data.readFloat();
+					input[input.length] = int(sample * 32767);
 
-				var samples: int = 2048;
-				var i: int;
-
-				while (samples > 0 && input.bytesAvailable >= GSM.FRAME_SIZE * 2) {
-					// Decode frame
-
-					var frame: Vector.<int> = decoder.decode(input);
-					var scale: Number = GSM.FRAME_SAMPLES / FRAME_SAMPLES;
-					
-					for (i = 0; i < GSM.FRAME_SAMPLES; i++) {
-						var recoded: int = outputBitmap.height * (0.5 + frame[i] * 0.5 / 32768);
-						outputBitmap.setPixel(1, recoded, 0xff0000);
-						outputBitmap.scroll(1, 0);
+					if (input.length - inputPosition == FRAME_SAMPLES) {
+						downsample(input, inputPosition);
+						input.length = inputPosition + GSM.FRAME_SAMPLES;
+						inputPosition = input.length;
 					}
-
-					// Resample 8000Hz --> 44100Hz
-
-					for (i = 0; i < FRAME_SAMPLES; i++) {
-
-						// Convert 16bit PCM to float PCM and Write
-
-						var value: Number = frame[int(i * scale)] / 32768;
-						event.data.writeFloat(value);
-						event.data.writeFloat(value);
-					}
-
-					samples -= FRAME_SAMPLES;
 				}
-
-				// Write silence if no data
-
-				while (samples-- > 0) {
-					event.data.writeFloat(0);
-					event.data.writeFloat(0);
-				}
-
-				field.text = "GSM-FR Encoding + Decoding Loopback\n" +
-					"Input: " + microphone.name + "\n" +
-					"Output: Sound Object\n";
-
-			} catch (e: Error) {
-				trace(e.getStackTrace());
+			} catch (e: *) {
+				trace("in:" + e);
 			}
 		}
 
-		private function _sample(event: SampleDataEvent): void {
-
-			var scale: Number = GSM.FRAME_SAMPLES / FRAME_SAMPLES;
-			var data: ByteArray = event.data;
-			var bytes: ByteArray;
-			var i: int;
-
-			// Sample contains 2560 bytes / 320 PCM samples
-
-			while (data.bytesAvailable > 0) {
-				// Read and Convert float PCM to 16bit PCM
-
-				frame.push(GSM.saturate(data.readFloat() * 32768));
-
-				if (frame.length == FRAME_SAMPLES) {
-
-					// Resample 44100Hz --> 8000Hz
-
-					var sum: int = 1;
-					var old: int;
-					var index: int;
-
-					for (i = 1; i < FRAME_SAMPLES; i++) {
-						index = int(i * scale);
-
-						if (old != index) {
-							frame[old] = frame[old] / sum;
-							sum = 1;
-							old = index;
-						} else {
-							sum++;
-						}
-
-						frame[index] += frame[i];
-					}
-
-					index = FRAME_SAMPLES - 1;
-					frame[index] = frame[index] / sum;
-					bytes = encoder.encode(frame);
-
-					// Store bytes
-
-					var position: int = input.position;
-					input.position = input.length;
-					input.writeBytes(bytes);
-					input.position = position;
-
-					// Draw comparison graph
-
-					for (i = 0; i < GSM.FRAME_SAMPLES; i++) {
-						var recoded: int = inputBitmap.height * (0.5 + frame[i] * 0.5 / 32768);
-						inputBitmap.setPixel(1, recoded, 0x00ff00);
-						inputBitmap.scroll(1, 0);
-					}
-
-					frame.length = 0;
+		private function downsample(input: Vector.<int>, position: int): void {
+			var index:int;
+			var old:int;
+			var count:int = 1;
+			
+			for (var i: int = 1; i < FRAME_SAMPLES; i++) {
+				index = Math.round(i * GSM.FRAME_SAMPLES / FRAME_SAMPLES);
+				if (index == old) {
+					count++;
+					input[position + index] += input[position + i];
+				} else {
+					input[position + old] /= count;
+					old = index;
+					count = 0;
 				}
+			}
+			
+			if (count) {
+				input[position + old] /= count;
+			}
+		}
+		
+		private function _sampleout(event: SampleDataEvent): void {
+			var total: int;
+			var min: int = 2048;
+			var max:int = 8192;
+			var data: ByteArray = event.data;
+			var i:int = 0;
+			
+			try {
+				
+				while(inputPosition > 0 && total + FRAME_SAMPLES < max) {
+					var signal: Vector.<int> = input.splice(0, GSM.FRAME_SAMPLES);
+					inputPosition -= GSM.FRAME_SAMPLES;
+					
+					var frame: Vector.<int> = decoder.decode(encoder.encode(signal));
+					
+					for (i = 0; i < GSM.FRAME_SAMPLES; i++) {
+						bitmap.setPixel(1, bitmap.height * (0.5 + signal[i] * 0.5 / 32768), 0x00ff00);
+						bitmap.setPixel(1, bitmap.height * (0.5 + frame[i] * 0.5 / 32768), 0xff0000);
+						bitmap.scroll(1, 0);
+					}
+					
+					for (i = 0; i < FRAME_SAMPLES; i++) {
+						var value: Number = frame[int(i * GSM.FRAME_SAMPLES / FRAME_SAMPLES)] / 32768;						
+						event.data.writeFloat(value);
+						event.data.writeFloat(value);
+					}
+					
+					total += FRAME_SAMPLES;
+				}
+				
+				if (inputPosition > GSM.FRAME_SAMPLES * 2) {
+					input.length = 0;
+					inputPosition = 0;
+				}
+				
+				while (total++ < min) {
+					data.writeFloat(0);
+					data.writeFloat(0);
+				}
+				
+				field.text = "GSM-FR Encoding\n" +
+					"Input: " + (microphone ? microphone.name : "No microphone") + "\n" +
+					"Output: Sound Object\n" + 
+					"--\n";
 
+			} catch (e: *) {
+				trace("out:" + e);
 			}
-
-			/*try {
-			var data:ByteArray = event.data;
-			var count:int = data.bytesAvailable / 16;
-			var left:Number;
-			var right: Number;
-			var frame: Vector.<Number> = this.frame;
-			var index:int = frame.length;
-			var size:int = GSMEncoder.FRAME_SIZE;
-								
-			for(var i:int = 0; i < count; i++) {
-			left = data.readFloat();
-			right = data.readFloat();
-					
-			// TODO: resample...
-			// TODO: try different types of left+right channel mixing
-					
-			frame[index++] = (left + right) / 2;
-					
-			if (index == size) {
-			encoder.encode(frame);
-			frame.length = index = 0;
-			}
-					
-			left = int(left * 127);
-			right = int(right * 127);
-					
-			if (left == right) {
-			bitmap.setPixel(1, 128 + left, 0xffff00);						
-			} else {
-			bitmap.setPixel(1, 128 + left, 0x00ff00);
-			bitmap.setPixel(1, 128 + right, 0xff0000);
-			}
-			bitmap.scroll(1, 0);	
-			}				
-			} catch (error:*) {
-			trace(error);
-			}*/
 		}
 
 		private function _status(event: StatusEvent): void {

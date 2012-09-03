@@ -17,7 +17,7 @@ package {
 	import flash.utils.getTimer;
 
 	/**
-	 * @author Vasiliy Vasilyev
+	 * @author Humanoid
 	 */
 	[SWF(backgroundColor="#000000", frameRate="31", width="640", height="480")]
 	public class FileDecodePlayTest extends Sprite {
@@ -86,7 +86,7 @@ package {
 			sound.addEventListener(SampleDataEvent.SAMPLE_DATA, _sample);
 			sound.play();
 		}
-
+		
 		private function _sample(event: SampleDataEvent): void {
 			try {
 				// Minimum required samples count is 2048
@@ -111,16 +111,17 @@ package {
 					}
 
 					// Resample 8000Hz --> 44100Hz
-										
+															
 					for (i = 0; i < FRAME_SAMPLES; i++) {
 						
 						// Convert 16bit PCM to float PCM and Write
 						
 						var value: Number = frame[int(i * scale)] / 32768;
+						
 						event.data.writeFloat(value);
 						event.data.writeFloat(value);
 					}
-					
+										
 					framesProcessed++;
 					samples -= FRAME_SAMPLES;
 				}

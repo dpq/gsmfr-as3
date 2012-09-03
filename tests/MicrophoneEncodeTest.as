@@ -20,7 +20,7 @@
 	import flash.utils.getTimer;
 
 	/**
-	 * @author Vasiliy Vasilyev
+	 * @author Humanoid
 	 */
 	[SWF(backgroundColor="#000000", frameRate="60", width="640", height="480")]
 	public class MicrophoneEncodeTest extends Sprite {

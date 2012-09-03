@@ -16,8 +16,8 @@ package org.glavbot.codecs.gsmfr {
 		private var larpp1: Vector.<int> = new Vector.<int>(8, true);
 		private var u: Vector.<int> = new Vector.<int>(8, true);
 		private var larc: Vector.<int> = new Vector.<int>(8, true);
-		private var lacf: Vector.<int> = new Vector.<int>(9, true);
 		private var wt: Vector.<int> = new Vector.<int>(160, true);
+		private var lacf: Vector.<int> = new Vector.<int>(9, true);
 		private var p: Vector.<int> = new Vector.<int>(9, true);
 		private var k: Vector.<int> = new Vector.<int>(9, true);
 		private var erp: Vector.<int> = new Vector.<int>(50, true);
@@ -45,18 +45,31 @@ package org.glavbot.codecs.gsmfr {
 		 * @return			33 bytes of GSM-FR encoded data
 		 */
 		public function encode(samples: Vector.<int>): ByteArray {
+			log("-- preprocess");
 			preprocess(samples);
+			log("data: ["+(samples)+"]");
+			log("-- lpc");
 			lpc(samples);
+			
 			shortTermAnalysis(samples, larc);
 
 			var index: int;
 			var offset: int = 120;
 			var i: int;
-
+			
 			for (var k: int = 0; k < 4; k++, index += 13) {
+				log("-- filter "+k);
+				log("dp: ["+dp+"]");
 				longTermAnalysis(samples, k * 40, erp, dp, offset, nc, bc, k);
+				log("erp: ["+erp+"]");
+				log("dp: ["+dp+"]");
+				log("-- preencode "+k);
 				preencoding(erp, xmaxc, mc, k, xmc, index);
-				
+				log("erp: ["+erp+"]");
+				log("xmaxc: ["+xmaxc+"]");
+				log("mc: ["+mc+"]");
+				log("xmc: ["+xmc+"]");
+								
 				for (i = 0; i < 40; i++) {
 					dp[int(i + offset)] = GSM.add(erp[int(5 + i)], dp[int(i + offset)]);
 				}				
@@ -66,6 +79,15 @@ package org.glavbot.codecs.gsmfr {
 			for (i = 0; i < 120; i++) {
 				dp[i] = dp[160 + i];
 			}
+			
+			log("-- pack");
+			
+			log("larc: ["+(larc)+"]");
+			log("nc: ["+(nc)+"]");
+			log("bc: ["+(bc)+"]");
+			log("xmaxc: ["+(xmaxc)+"]");
+			log("xmc: ["+(xmc)+"]");
+			log("mc: ["+(mc)+"]");
 
 			i = 0;
 
@@ -111,11 +133,24 @@ package org.glavbot.codecs.gsmfr {
 
 		private function preencoding(erp: Vector.<int>, xmaxc: Vector.<int>, mc: Vector.<int>, k: int, xmc: Vector.<int>, index: int): void {
 			weightFilter(erp);
+			log("e: ["+(erp)+"]");
+			
+			log("x: ["+(x)+"]");
+			
 			gridSelection(xm, mc, k);
+			log("xm: ["+(xm)+"]");
+			log("mc: ["+(mc)+"]");
 			quantization(xm, xmc, index, xmaxc, k);
-
+			
+			log("xmaxc: ["+(xmaxc)+"]");
+			log("xmc: ["+(xmc)+"]");
+			log("xm: ["+(xm)+"]");
+			
 			GSM.dequantization(xmc, xmp, index, mantis.x, mantis.y);
+			log("xmc: ["+(xmc)+"]");
+			
 			positioning(mc[k], xmp, erp);
+			log("erp: ["+(erp)+"]");
 		}
 		
 		public static function positioning(mc: int, xmp: Vector.<int>, ep: Vector.<int>): void {
@@ -207,26 +242,34 @@ package org.glavbot.codecs.gsmfr {
 			var em: int;
 			var step: int;
 			var common: int = value = row(0, 1);
+			
+			log("common: " + common);
 
 			em = value = (value + grid(0, 0)) << 1;
-
-			value = row(1, 0) << 1;
+			
+			value = row(1, 0) << 1;			
+			log("value: " + value);			
 			if (value > em) {
 				step = 1;
 				em = value;
 			}
-
+			
 			value = row(2, 0) << 1;
+			log("value: " + value);
 			if (value > em) {
 				step = 2;
 				em = value;
 			}
-
+			
 			value = (common + grid(3, 12)) << 1;
+			log("value: " + value);
 			if (value > em) {
 				step = 3;
 				em = value;
 			}
+			
+			log("em: " + em);
+			log("step: " + step);
 
 			for (var i: int = 0; i <= 12; i++) {
 				xm[i] = x[step + 3 * i];
@@ -234,10 +277,10 @@ package org.glavbot.codecs.gsmfr {
 
 			mc[index] = step;
 		}
-
+		
 		private function row(m: int, offset: int): int {
 			var result: int = 0;
-			for (var i: int = offset; i < 12; i++) {
+			for (var i: int = offset; i <= 12; i++) {
 				result += grid(m, i);
 			}
 			return result;
@@ -408,9 +451,18 @@ package org.glavbot.codecs.gsmfr {
 
 		private function lpc(samples: Vector.<int>): void {
 			autocorrelation(samples, lacf);
-			reflection(larc);
+			log("data: ["+(samples)+"]");
+			log("lacf: ["+(lacf)+"]");
+			reflection(larc, lacf);
+			log("larc: ["+(larc)+"]");
 			transform(larc);
+			log("larc: ["+(larc)+"]");
 			quant(larc);
+			log("larc: ["+(larc)+"]");
+		}
+
+		private function log(string: String): void {
+			//trace(string);
 		}
 
 		private function quant(larc: Vector.<int>): void {
@@ -467,7 +519,7 @@ package org.glavbot.codecs.gsmfr {
 			}
 		}
 
-		private function reflection(larc: Vector.<int>): void {
+		private function reflection(larc: Vector.<int>, lacf: Vector.<int>): void {
 			var i: int;
 			var temp: int = lacf[0];
 			var value: int;
@@ -480,7 +532,7 @@ package org.glavbot.codecs.gsmfr {
 			}
 
 			temp = GSM.norm(temp);
-
+			
 			for (i = 0; i < 8; i++) {
 				value = (lacf[i] << temp) >> 16;
 				p[i] = value;
@@ -549,22 +601,29 @@ package org.glavbot.codecs.gsmfr {
 
 			var sl: int = samples[i = 0];
 
+			lacf[0] = sl * samples[i];
+
+			sl = samples[++i];
 			lacf[0] += sl * samples[i];
+			lacf[1] = sl * samples[int(i - 1)];
 
 			sl = samples[++i];
 			lacf[0] += sl * samples[i];
 			lacf[1] += sl * samples[int(i - 1)];
+			lacf[2] = sl * samples[int(i - 2)];
 
 			sl = samples[++i];
 			lacf[0] += sl * samples[i];
 			lacf[1] += sl * samples[int(i - 1)];
 			lacf[2] += sl * samples[int(i - 2)];
+			lacf[3] = sl * samples[int(i - 3)];
 
 			sl = samples[++i];
 			lacf[0] += sl * samples[i];
 			lacf[1] += sl * samples[int(i - 1)];
 			lacf[2] += sl * samples[int(i - 2)];
 			lacf[3] += sl * samples[int(i - 3)];
+			lacf[4] = sl * samples[int(i - 4)];
 
 			sl = samples[++i];
 			lacf[0] += sl * samples[i];
@@ -572,6 +631,7 @@ package org.glavbot.codecs.gsmfr {
 			lacf[2] += sl * samples[int(i - 2)];
 			lacf[3] += sl * samples[int(i - 3)];
 			lacf[4] += sl * samples[int(i - 4)];
+			lacf[5] = sl * samples[int(i - 5)];
 
 			sl = samples[++i];
 			lacf[0] += sl * samples[i];
@@ -580,6 +640,7 @@ package org.glavbot.codecs.gsmfr {
 			lacf[3] += sl * samples[int(i - 3)];
 			lacf[4] += sl * samples[int(i - 4)];
 			lacf[5] += sl * samples[int(i - 5)];
+			lacf[6] = sl * samples[int(i - 6)];
 
 			sl = samples[++i];
 			lacf[0] += sl * samples[i];
@@ -589,18 +650,10 @@ package org.glavbot.codecs.gsmfr {
 			lacf[4] += sl * samples[int(i - 4)];
 			lacf[5] += sl * samples[int(i - 5)];
 			lacf[6] += sl * samples[int(i - 6)];
-
+			lacf[7] = sl * samples[int(i - 7)];
+			
 			sl = samples[++i];
-			lacf[0] += sl * samples[i];
-			lacf[1] += sl * samples[int(i - 1)];
-			lacf[2] += sl * samples[int(i - 2)];
-			lacf[3] += sl * samples[int(i - 3)];
-			lacf[4] += sl * samples[int(i - 4)];
-			lacf[5] += sl * samples[int(i - 5)];
-			lacf[6] += sl * samples[int(i - 6)];
-			lacf[7] += sl * samples[int(i - 7)];
-
-			sl = samples[++i];
+			lacf[8] = 0;
 
 			for (; i < 160; i++) {
 				sl = samples[i];
