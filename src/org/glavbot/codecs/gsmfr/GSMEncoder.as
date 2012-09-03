@@ -45,10 +45,7 @@ package org.glavbot.codecs.gsmfr {
 		 * @return			33 bytes of GSM-FR encoded data
 		 */
 		public function encode(samples: Vector.<int>): ByteArray {
-			log("-- preprocess");
 			preprocess(samples);
-			log("data: ["+(samples)+"]");
-			log("-- lpc");
 			lpc(samples);
 			
 			shortTermAnalysis(samples, larc);
@@ -58,18 +55,9 @@ package org.glavbot.codecs.gsmfr {
 			var i: int;
 			
 			for (var k: int = 0; k < 4; k++, index += 13) {
-				log("-- filter "+k);
-				log("dp: ["+dp+"]");
 				longTermAnalysis(samples, k * 40, erp, dp, offset, nc, bc, k);
-				log("erp: ["+erp+"]");
-				log("dp: ["+dp+"]");
-				log("-- preencode "+k);
 				preencoding(erp, xmaxc, mc, k, xmc, index);
-				log("erp: ["+erp+"]");
-				log("xmaxc: ["+xmaxc+"]");
-				log("mc: ["+mc+"]");
-				log("xmc: ["+xmc+"]");
-								
+				
 				for (i = 0; i < 40; i++) {
 					dp[int(i + offset)] = GSM.add(erp[int(5 + i)], dp[int(i + offset)]);
 				}				
@@ -79,15 +67,6 @@ package org.glavbot.codecs.gsmfr {
 			for (i = 0; i < 120; i++) {
 				dp[i] = dp[160 + i];
 			}
-			
-			log("-- pack");
-			
-			log("larc: ["+(larc)+"]");
-			log("nc: ["+(nc)+"]");
-			log("bc: ["+(bc)+"]");
-			log("xmaxc: ["+(xmaxc)+"]");
-			log("xmc: ["+(xmc)+"]");
-			log("mc: ["+(mc)+"]");
 
 			i = 0;
 
@@ -133,24 +112,10 @@ package org.glavbot.codecs.gsmfr {
 
 		private function preencoding(erp: Vector.<int>, xmaxc: Vector.<int>, mc: Vector.<int>, k: int, xmc: Vector.<int>, index: int): void {
 			weightFilter(erp);
-			log("e: ["+(erp)+"]");
-			
-			log("x: ["+(x)+"]");
-			
 			gridSelection(xm, mc, k);
-			log("xm: ["+(xm)+"]");
-			log("mc: ["+(mc)+"]");
 			quantization(xm, xmc, index, xmaxc, k);
-			
-			log("xmaxc: ["+(xmaxc)+"]");
-			log("xmc: ["+(xmc)+"]");
-			log("xm: ["+(xm)+"]");
-			
 			GSM.dequantization(xmc, xmp, index, mantis.x, mantis.y);
-			log("xmc: ["+(xmc)+"]");
-			
 			positioning(mc[k], xmp, erp);
-			log("erp: ["+(erp)+"]");
 		}
 		
 		public static function positioning(mc: int, xmp: Vector.<int>, ep: Vector.<int>): void {
@@ -243,34 +208,26 @@ package org.glavbot.codecs.gsmfr {
 			var step: int;
 			var common: int = value = row(0, 1);
 			
-			log("common: " + common);
-
 			em = value = (value + grid(0, 0)) << 1;
 			
 			value = row(1, 0) << 1;			
-			log("value: " + value);			
 			if (value > em) {
 				step = 1;
 				em = value;
 			}
 			
 			value = row(2, 0) << 1;
-			log("value: " + value);
 			if (value > em) {
 				step = 2;
 				em = value;
 			}
 			
 			value = (common + grid(3, 12)) << 1;
-			log("value: " + value);
 			if (value > em) {
 				step = 3;
 				em = value;
 			}
 			
-			log("em: " + em);
-			log("step: " + step);
-
 			for (var i: int = 0; i <= 12; i++) {
 				xm[i] = x[step + 3 * i];
 			}
@@ -451,18 +408,9 @@ package org.glavbot.codecs.gsmfr {
 
 		private function lpc(samples: Vector.<int>): void {
 			autocorrelation(samples, lacf);
-			log("data: ["+(samples)+"]");
-			log("lacf: ["+(lacf)+"]");
 			reflection(larc, lacf);
-			log("larc: ["+(larc)+"]");
 			transform(larc);
-			log("larc: ["+(larc)+"]");
 			quant(larc);
-			log("larc: ["+(larc)+"]");
-		}
-
-		private function log(string: String): void {
-			//trace(string);
 		}
 
 		private function quant(larc: Vector.<int>): void {
