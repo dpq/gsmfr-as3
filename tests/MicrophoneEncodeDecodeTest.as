@@ -10,7 +10,6 @@
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.SampleDataEvent;
-	import flash.events.StatusEvent;
 	import flash.media.Microphone;
 	import flash.media.MicrophoneEnhancedMode;
 	import flash.media.MicrophoneEnhancedOptions;
@@ -96,15 +95,16 @@
 				var options:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
 				options.nonLinearProcessing = true;
 				options.echoPath = 128;
+				options.autoGain = true;
 				options.mode = MicrophoneEnhancedMode.FULL_DUPLEX;						
 				microphone.enhancedOptions = options;
 				
 				microphone.setUseEchoSuppression(true);
 				microphone.encodeQuality = 6;
 				microphone.setSilenceLevel(0);
-				microphone.gain = 75;
+				microphone.enableVAD = true;
+				microphone.gain = 50;
 				microphone.rate = 44;
-				microphone.addEventListener(StatusEvent.STATUS, _status);
 				microphone.addEventListener(SampleDataEvent.SAMPLE_DATA, _samplein);
 
 			} else {
@@ -216,10 +216,6 @@
 			} catch (e: *) {
 				trace("out:" + e);
 			}
-		}
-
-		private function _status(event: StatusEvent): void {
-			trace(event.type);
 		}
 	}
 }
