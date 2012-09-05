@@ -15,6 +15,7 @@
 	import flash.media.MicrophoneEnhancedMode;
 	import flash.media.MicrophoneEnhancedOptions;
 	import flash.media.Sound;
+	import flash.media.SoundChannel;
 	import flash.media.SoundLoaderContext;
 	import flash.media.SoundMixer;
 	import flash.text.TextField;
@@ -38,9 +39,11 @@
 		private var decoder: GSMDecoder;
 		private var sound: Sound;
 		
-		var input: Vector.<int> = new <int>[];
-		var inputPosition: int;
+		private var input: Vector.<int> = new <int>[];
+		private var inputPosition: int;
+		
 		private var bitmap: BitmapData;
+		private var channel: SoundChannel;
 		
 		public function MicrophoneEncodeDecodeTest() {
 			try {
@@ -110,16 +113,16 @@
 		}
 
 		private function initSound(): void {
-			
 			SoundMixer.bufferTime = 0;
 			SoundMixer.useSpeakerphoneForVoice = true;
+			SoundMixer.audioPlaybackMode = "voice";
             
 			var context: SoundLoaderContext = new SoundLoaderContext();
 			context.bufferTime = 0;
-			
+						
 			sound = new Sound(null, context);
 			sound.addEventListener(SampleDataEvent.SAMPLE_DATA, _sampleout);
-			sound.play();
+			channel = sound.play();
 		}
 
 		private function _samplein(event: SampleDataEvent): void {
@@ -192,9 +195,12 @@
 					total += FRAME_SAMPLES;
 				}
 				
-				if (inputPosition > GSM.FRAME_SAMPLES) {
+				if (inputPosition > 0) {
 					input.length = 0;
 					inputPosition = 0;
+					
+					channel.stop();
+					sound.play();
 				}
 				
 				while (total++ < min) {
