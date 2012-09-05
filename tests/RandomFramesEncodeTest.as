@@ -37,7 +37,11 @@ package {
 					index++;
 					
 					if (encoded != parts[1]) {
+						//trace("encoded: " + encoded);
+						//trace("output: " + parts[1]);
 						trace("FAIL");
+					} else {
+						//trace("OK");
 					}
 					
 					trace("");

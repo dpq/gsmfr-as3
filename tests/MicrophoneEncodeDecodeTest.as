@@ -12,7 +12,11 @@
 	import flash.events.SampleDataEvent;
 	import flash.events.StatusEvent;
 	import flash.media.Microphone;
+	import flash.media.MicrophoneEnhancedMode;
+	import flash.media.MicrophoneEnhancedOptions;
 	import flash.media.Sound;
+	import flash.media.SoundLoaderContext;
+	import flash.media.SoundMixer;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
 	import flash.text.TextFormat;
@@ -85,10 +89,16 @@
 			microphone = Microphone.getEnhancedMicrophone();
 
 			if (microphone) {
-
+				
+				var options:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
+				options.nonLinearProcessing = true;
+				options.echoPath = 128;
+				options.mode = MicrophoneEnhancedMode.FULL_DUPLEX;						
+				microphone.enhancedOptions = options;
+				
 				microphone.setUseEchoSuppression(true);
 				microphone.encodeQuality = 6;
-				microphone.setSilenceLevel(0, 4000);
+				microphone.setSilenceLevel(0);
 				microphone.gain = 75;
 				microphone.rate = 44;
 				microphone.addEventListener(StatusEvent.STATUS, _status);
@@ -100,7 +110,14 @@
 		}
 
 		private function initSound(): void {
-			sound = new Sound();
+			
+			SoundMixer.bufferTime = 0;
+			SoundMixer.useSpeakerphoneForVoice = true;
+            
+			var context: SoundLoaderContext = new SoundLoaderContext();
+			context.bufferTime = 0;
+			
+			sound = new Sound(null, context);
 			sound.addEventListener(SampleDataEvent.SAMPLE_DATA, _sampleout);
 			sound.play();
 		}
@@ -175,7 +192,7 @@
 					total += FRAME_SAMPLES;
 				}
 				
-				if (inputPosition > GSM.FRAME_SAMPLES * 2) {
+				if (inputPosition > GSM.FRAME_SAMPLES) {
 					input.length = 0;
 					inputPosition = 0;
 				}

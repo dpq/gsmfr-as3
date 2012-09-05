@@ -47,20 +47,19 @@ package org.glavbot.codecs.gsmfr {
 		public function encode(samples: Vector.<int>): ByteArray {
 			preprocess(samples);
 			lpc(samples);
-			
+
 			shortTermAnalysis(samples, larc);
 
 			var index: int;
 			var offset: int = 120;
 			var i: int;
-			
+
 			for (var k: int = 0; k < 4; k++, index += 13) {
 				longTermAnalysis(samples, k * 40, erp, dp, offset, nc, bc, k);
 				preencoding(erp, xmaxc, mc, k, xmc, index);
-				
 				for (i = 0; i < 40; i++) {
 					dp[int(i + offset)] = GSM.add(erp[int(5 + i)], dp[int(i + offset)]);
-				}				
+				}
 				offset += 40;
 			}
 
@@ -72,7 +71,7 @@ package org.glavbot.codecs.gsmfr {
 
 			frame.length = GSM.FRAME_SIZE;
 			frame.position = 0;
-			
+
 			frame[i++] = 0xd0 | larc[0] >> 2 & 0xf;
 			frame[i++] = (larc[0] & 0x3) << 6 | larc[1] & 0x3f;
 			frame[i++] = (larc[2] & 0x1f) << 3 | larc[3] >> 2 & 0x7;
@@ -117,7 +116,7 @@ package org.glavbot.codecs.gsmfr {
 			GSM.dequantization(xmc, xmp, index, mantis.x, mantis.y);
 			positioning(mc[k], xmp, erp);
 		}
-		
+
 		public static function positioning(mc: int, xmp: Vector.<int>, ep: Vector.<int>): void {
 			var i: int = 13;
 			var index: int = 5;
@@ -207,34 +206,34 @@ package org.glavbot.codecs.gsmfr {
 			var em: int;
 			var step: int;
 			var common: int = value = row(0, 1);
-			
+
 			em = value = (value + grid(0, 0)) << 1;
-			
-			value = row(1, 0) << 1;			
+
+			value = row(1, 0) << 1;
 			if (value > em) {
 				step = 1;
 				em = value;
 			}
-			
+
 			value = row(2, 0) << 1;
 			if (value > em) {
 				step = 2;
 				em = value;
 			}
-			
+
 			value = (common + grid(3, 12)) << 1;
 			if (value > em) {
 				step = 3;
 				em = value;
 			}
-			
+
 			for (var i: int = 0; i <= 12; i++) {
 				xm[i] = x[step + 3 * i];
 			}
 
 			mc[index] = step;
 		}
-		
+
 		private function row(m: int, offset: int): int {
 			var result: int = 0;
 			for (var i: int = offset; i <= 12; i++) {
@@ -252,7 +251,7 @@ package org.glavbot.codecs.gsmfr {
 			var value: int = 0;
 			for (var k: int = 0; k < 40; k++) {
 				value = 4096 + erp[k + 0] * -134 + erp[k + 1] * -374 + erp[k + 3] * 2054 + erp[k + 4] * 5741 + erp[k + 5] * 8192 + erp[k + 6] * 5741 + erp[k + 7] * 2054 + erp[k + 9] * -374 + erp[k + 10] * -134;
-				x[k] = GSM.saturate(value >> 13);
+				x[k] = GSM.saturate(((value >> 13) << 16) >> 16);
 			}
 		}
 
@@ -480,7 +479,7 @@ package org.glavbot.codecs.gsmfr {
 			}
 
 			temp = GSM.norm(temp);
-			
+
 			for (i = 0; i < 8; i++) {
 				value = (lacf[i] << temp) >> 16;
 				p[i] = value;
@@ -599,7 +598,7 @@ package org.glavbot.codecs.gsmfr {
 			lacf[5] += sl * samples[int(i - 5)];
 			lacf[6] += sl * samples[int(i - 6)];
 			lacf[7] = sl * samples[int(i - 7)];
-			
+
 			sl = samples[++i];
 			lacf[8] = 0;
 
@@ -626,6 +625,8 @@ package org.glavbot.codecs.gsmfr {
 				}
 			}
 		}
+
+
 
 	}
 }
