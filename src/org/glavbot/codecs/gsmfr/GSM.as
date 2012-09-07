@@ -48,6 +48,7 @@ package org.glavbot.codecs.gsmfr {
 			}
 		}
 
+		[Inline]
 		public static function coefficients_0_12(larpp0: Vector.<int>, larpp1: Vector.<int>, larp: Vector.<int>): void {
 			for (var i: int = 0; i < 8; i++) {
 				larp[i] = add(larpp0[i] >> 2, larpp1[i] >> 2);
@@ -55,12 +56,14 @@ package org.glavbot.codecs.gsmfr {
 			}
 		}
 
+		[Inline]
 		public static function coefficients_13_26(larpp0: Vector.<int>, larpp1: Vector.<int>, larp: Vector.<int>): void {
 			for (var i: int = 0; i < 8; i++) {
 				larp[i] = add(larpp0[i] >> 1, larpp1[i] >> 1);
 			}
 		}
 
+		[Inline]
 		public static function coefficients_27_39(larpp0: Vector.<int>, larpp1: Vector.<int>, larp: Vector.<int>): void {
 			for (var i: int = 0; i < 8; i++) {
 				larp[i] = add(larpp0[i] >> 2, larpp1[i] >> 2);
@@ -68,24 +71,29 @@ package org.glavbot.codecs.gsmfr {
 			}
 		}
 
+		[Inline]
 		public static function coefficients_40_159(larpp: Vector.<int>, larp: Vector.<int>): void {
 			for (var i: int = 0; i < 8; i++) {
 				larp[i] = larpp[i];
 			}
 		}
 
+		[Inline]
 		public static function saturate(x: int): int {
 			return x >= -32768 ? x <= 32767 ? x : 32767 : -32768;
 		}
 
+		[Inline]
 		public static function sub(a: int, b: int): int {
 			return saturate(a - b);
 		}
 
+		[Inline]
 		public static function add(a: int, b: int): int {
 			return saturate(a + b);
 		}
 
+		[Inline]
 		public static function abs(a: int): int {
 			return (a >= 0) ? a : a == -32768 ? 32767 : -a;
 		}
@@ -130,6 +138,7 @@ package org.glavbot.codecs.gsmfr {
 				return a >> n;
 		}
 
+		[Inline]
 		public static function mult(a: int, b: int): int {
 			if (a == -32768 && b == -32768) {
 				return 32767;
@@ -138,6 +147,7 @@ package org.glavbot.codecs.gsmfr {
 			}
 		}
 
+		[Inline]
 		public static function mult_r(a: int, b: int): int {
 			if (a == -32768 && b == -32768) {
 				return 32767;

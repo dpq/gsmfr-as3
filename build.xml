@@ -1,0 +1,42 @@
+<project name="GSM-FR AS3 Codec" basedir=".">
+
+	<!--
+		Create file build.properties with following property:
+		FLEX_HOME={AIR or Flex SDK path, ASC2.0 version is preferred}
+		
+		Note: playerglobal.swc v11.3+ is required		
+	-->
+
+	<property file="build.properties" />
+	<taskdef resource="flexTasks.tasks" classpath="${FLEX_HOME}/ant/lib/flexTasks.jar" />
+
+	<target name="compile-swc">
+		<compc debug="false" output="bin/gsmfr-as3.swc">
+			<source-path path-element="src" />
+			<include-sources dir="src" includes="**/*.as" />
+		</compc>
+	</target>
+
+	<target name="compile-tests">
+		<mxmlc file="tests/FileDecodePlayTest.as" output="bin/FileDecodePlayTest.swf" swf-version="16">
+			<source-path path-element="src" />
+		</mxmlc>
+		<mxmlc file="tests/MicrophoneEncodeDecodeNetStreamTest.as" output="bin/MicrophoneEncodeDecodeNetStreamTest.swf" swf-version="16">
+			<source-path path-element="src" />
+		</mxmlc>
+		<mxmlc file="tests/MicrophoneEncodeDecodeTest.as" output="bin/MicrophoneEncodeDecodeTest.swf" swf-version="16">
+			<source-path path-element="src" />
+		</mxmlc>
+		<mxmlc file="tests/MicrophoneEncodeTest.as" output="bin/MicrophoneEncodeTest.swf" swf-version="16">
+			<source-path path-element="src" />
+		</mxmlc>
+		<mxmlc file="tests/RandomFramesEncodeTest.as" output="bin/RandomFramesEncodeTest.swf" swf-version="16">
+			<source-path path-element="src" />
+		</mxmlc>
+		<mxmlc file="tests/SingleFrameEncodeTest.as" output="bin/SingleFrameEncodeTest.swf" swf-version="16">
+			<source-path path-element="src" />
+		</mxmlc>
+	</target>
+
+
+</project>

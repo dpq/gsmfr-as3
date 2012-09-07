@@ -79,6 +79,12 @@ package {
 			stream = new NetStream(connection);
 			stream.bufferTime = 0;
 			stream.bufferTimeMax = 0.01;
+			try {
+				// fp 11.3+ is required
+				stream["useJitterBuffer"] = true;
+			} catch (e:*) {
+				trace("NetStream.useJitterBuffer is not supported");
+			}
 			stream.addEventListener(NetStatusEvent.NET_STATUS, _status);
 			
 			var header : ByteArray = new ByteArray();
@@ -198,13 +204,14 @@ package {
 			
 			if (start) {			
 				var timestamp:int = time - start;				
+				
 				tag.writeByte((timestamp & 0xff0000) >> 16); // timstamp
 				tag.writeShort(timestamp & 0xffff);
 				tag.writeByte((timestamp & 0xff000000) >> 24);
 				
-				//start-=10; // eats cumulative latency 
+				start--; // eats cumulative latency
 			} else {
-				start = time;
+				start = time - 10000; // first packet shift to make use bufferMaxTime
 				tag.writeUnsignedInt(0);
 			}
 			
